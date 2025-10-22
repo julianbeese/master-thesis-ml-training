@@ -46,40 +46,41 @@ class TrainingDataGenerator:
     def create_train_test_split(self, test_size: float = 0.2, random_seed: int = 42) -> Tuple[List[Dict], List[Dict]]:
         """Erstellt Train/Test-Split mit stratifizierter Stichprobe"""
         print(f"Erstelle Train/Test-Split (Test: {test_size:.1%})...")
-        
-        random.seed(random_seed)
-        
-        # Gruppiere nach Frame-Label für stratifizierte Stichprobe
-        frame_groups = {}
-        for ann in self.annotations:
-            frame = ann['frame_label']
-            if frame not in frame_groups:
-                frame_groups[frame] = []
-            frame_groups[frame].append(ann)
-        
-        train_data = []
-        test_data = []
-        
-        for frame, group in frame_groups.items():
-            # Mische Gruppe
-            random.shuffle(group)
-            
-            # Berechne Split
-            n_test = max(1, int(len(group) * test_size))
-            n_train = len(group) - n_test
-            
-            # Teile auf
-            train_data.extend(group[:n_train])
-            test_data.extend(group[n_test:])
-            
-            print(f"  {frame:15}: Train={n_train:3}, Test={n_test:3}")
-        
-        # Mische finale Listen
-        random.shuffle(train_data)
-        random.shuffle(test_data)
-        
-        print(f"✓ Train: {len(train_data)}, Test: {len(test_data)}")
-        return train_data, test_data
+
+		train_data = []
+		test_data = []
+
+		# group by existing split
+		for ann in self.annotation:
+			dataset_split = ann.get('dataset_split', '').lower()
+
+			if dataset_split == 'train':
+				train_data.append(ann)
+			elif dataset_split == 'test':
+				test_data.append(ann)
+			else:
+				print(f"Warning: unknown dataset_split Value", {dataset_split})
+
+		# Show Distribution per frame
+		train_counts = Counter(ann['frame_label']) for ann in train_data)
+		test_counts = Counter(ann['frame_label']) for ann in test_data)
+
+		# Zeige Verteilung pro Frame
+	    train_counts = Counter(ann['frame_label'] for ann in train_data)
+	    test_counts = Counter(ann['frame_label'] for ann in test_data)
+    
+	    print("\nTrain-Set Verteilung:")
+	    for frame in self.frame_categories:
+	        count = train_counts.get(frame, 0)
+	        print(f"  {frame:15}: {count:3}")
+    
+	    print("\nTest-Set Verteilung:")
+	    for frame in self.frame_categories:
+	        count = test_counts.get(frame, 0)
+ 	       print(f"  {frame:15}: {count:3}")
+    
+ 	   print(f"\n✓ Train: {len(train_data)}, Test: {len(test_data)}")
+ 	   return train_data, test_data
     
     def generate_classification_format(self, data: List[Dict], format_type: str = "jsonl") -> List[str]:
         """Generiert Daten im Classification-Format"""
@@ -236,7 +237,8 @@ FRAME:"""
             "formats": ["jsonl", "csv", "alpaca"]
         }
         
-        with open(self.output_dir / "metadata.json", 'w', encoding='utf-8') as f:
+        tsa
+with open(self.output_dir / "metadata.json", 'w', encoding='utf-8') as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
         
         print(f"✓ Training-Daten gespeichert in {self.output_dir}")
