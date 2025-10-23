@@ -46,41 +46,37 @@ class TrainingDataGenerator:
     def create_train_test_split(self, test_size: float = 0.2, random_seed: int = 42) -> Tuple[List[Dict], List[Dict]]:
         """Erstellt Train/Test-Split mit stratifizierter Stichprobe"""
         print(f"Erstelle Train/Test-Split (Test: {test_size:.1%})...")
-
-		train_data = []
-		test_data = []
-
-		# group by existing split
-		for ann in self.annotation:
-			dataset_split = ann.get('dataset_split', '').lower()
-
-			if dataset_split == 'train':
-				train_data.append(ann)
-			elif dataset_split == 'test':
-				test_data.append(ann)
-			else:
-				print(f"Warning: unknown dataset_split Value", {dataset_split})
-
-		# Show Distribution per frame
-		train_counts = Counter(ann['frame_label']) for ann in train_data)
-		test_counts = Counter(ann['frame_label']) for ann in test_data)
-
-		# Zeige Verteilung pro Frame
-	    train_counts = Counter(ann['frame_label'] for ann in train_data)
-	    test_counts = Counter(ann['frame_label'] for ann in test_data)
-    
-	    print("\nTrain-Set Verteilung:")
-	    for frame in self.frame_categories:
-	        count = train_counts.get(frame, 0)
-	        print(f"  {frame:15}: {count:3}")
-    
-	    print("\nTest-Set Verteilung:")
-	    for frame in self.frame_categories:
-	        count = test_counts.get(frame, 0)
- 	       print(f"  {frame:15}: {count:3}")
-    
- 	   print(f"\n✓ Train: {len(train_data)}, Test: {len(test_data)}")
- 	   return train_data, test_data
+        
+        train_data = []
+        test_data = []
+        
+        # group by existing split
+        for ann in self.annotations:
+            dataset_split = ann.get('dataset_split', '').lower()
+            
+            if dataset_split == 'train':
+                train_data.append(ann)
+            elif dataset_split == 'test':
+                test_data.append(ann)
+            else:
+                print(f"Warning: unknown dataset_split Value: {dataset_split}")
+        
+        # Zeige Verteilung pro Frame
+        train_counts = Counter(ann['frame_label'] for ann in train_data)
+        test_counts = Counter(ann['frame_label'] for ann in test_data)
+        
+        print("\nTrain-Set Verteilung:")
+        for frame in self.frame_categories:
+            count = train_counts.get(frame, 0)
+            print(f"  {frame:15}: {count:3}")
+        
+        print("\nTest-Set Verteilung:")
+        for frame in self.frame_categories:
+            count = test_counts.get(frame, 0)
+            print(f"  {frame:15}: {count:3}")
+        
+        print(f"\n✓ Train: {len(train_data)}, Test: {len(test_data)}")
+        return train_data, test_data
     
     def generate_classification_format(self, data: List[Dict], format_type: str = "jsonl") -> List[str]:
         """Generiert Daten im Classification-Format"""
@@ -112,8 +108,8 @@ class TrainingDataGenerator:
         return lines
     
     def _generate_csv_format(self, data: List[Dict]) -> List[str]:
-        """Generiert CSV-Format"""
-        lines = ["text,label,confidence,notes"]
+        """Generiert CSV-Format mit chunk_text und frame_label Spalten"""
+        lines = ["chunk_text,frame_label,confidence,notes"]
         for ann in data:
             text = ann['chunk_text'].replace('"', '""')  # Escape quotes
             label = ann['frame_label']
@@ -197,14 +193,14 @@ FRAME:"""
         with open(self.output_dir / "test.jsonl", 'w', encoding='utf-8') as f:
             f.write('\n'.join(test_jsonl))
         
-        # CSV-Format
+        # CSV-Format (mit Dateinamen aus training_config.yaml)
         train_csv = self.generate_classification_format(train_data, "csv")
         test_csv = self.generate_classification_format(test_data, "csv")
         
-        with open(self.output_dir / "train.csv", 'w', encoding='utf-8') as f:
+        with open(self.output_dir / "training_data_export.csv", 'w', encoding='utf-8') as f:
             f.write('\n'.join(train_csv))
         
-        with open(self.output_dir / "test.csv", 'w', encoding='utf-8') as f:
+        with open(self.output_dir / "test_data_export.csv", 'w', encoding='utf-8') as f:
             f.write('\n'.join(test_csv))
         
         # Alpaca-Format
@@ -237,13 +233,12 @@ FRAME:"""
             "formats": ["jsonl", "csv", "alpaca"]
         }
         
-        tsa
-with open(self.output_dir / "metadata.json", 'w', encoding='utf-8') as f:
+        with open(self.output_dir / "metadata.json", 'w', encoding='utf-8') as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
         
         print(f"✓ Training-Daten gespeichert in {self.output_dir}")
         print(f"  - train.jsonl / test.jsonl (JSONL-Format)")
-        print(f"  - train.csv / test.csv (CSV-Format)")
+        print(f"  - training_data_export.csv / test_data_export.csv (CSV-Format)")
         print(f"  - train_alpaca.jsonl / test_alpaca.jsonl (Alpaca-Format)")
         print(f"  - few_shot_examples.json (Few-Shot-Beispiele)")
         print(f"  - prompt_template.txt (Prompt-Template)")
