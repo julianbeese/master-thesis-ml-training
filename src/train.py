@@ -74,14 +74,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
-    # Model für Multi-Class-Klassifikation laden mit 8-bit Quantisierung
-    from transformers import BitsAndBytesConfig
-    
-    quantization_config = BitsAndBytesConfig(
-        load_in_8bit=True,
-        llm_int8_threshold=6.0,
-    )
-    
+    # Model für Multi-Class-Klassifikation laden (verwendet bereits Mxfp4 Quantisierung)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
@@ -89,8 +82,9 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         id2label=id2label,
         problem_type="single_label_classification",
         trust_remote_code=config['model']['trust_remote_code'],
-        quantization_config=quantization_config,
-        device_map=config['hardware']['device_map']
+        torch_dtype=torch.bfloat16,
+        device_map=config['hardware']['device_map'],
+        low_cpu_mem_usage=True
     )
     
     # LoRA Configuration
