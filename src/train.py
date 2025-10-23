@@ -87,6 +87,9 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         low_cpu_mem_usage=True
     )
     
+    # Enable gradient checkpointing to save memory
+    model.gradient_checkpointing_enable()
+    
     # LoRA Configuration
     if config['training']['use_lora']:
         print("Konfiguriere LoRA...")

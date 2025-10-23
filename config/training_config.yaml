@@ -32,8 +32,8 @@ training:
   
   # Training Hyperparameters
   num_epochs: 3
-  batch_size: 4  # Per GPU
-  gradient_accumulation_steps: 8  # Effektive Batch Size: 32
+  batch_size: 1  # Per GPU (reduced for 32GB VRAM)
+  gradient_accumulation_steps: 32  # Effektive Batch Size: 32
   learning_rate: 2e-4
   weight_decay: 0.01
   warmup_steps: 100
