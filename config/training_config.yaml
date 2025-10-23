@@ -1,7 +1,7 @@
 # Training Configuration for GPT-OSS-20B Fine-tuning
 model:
   name: "gpt-oss-20b"
-  base_model: "openai-community/gpt-oss-20b"  # Hugging Face model ID
+  base_model: "openai/gpt-oss-20b"  # Hugging Face model ID
   trust_remote_code: true
   
 data:
