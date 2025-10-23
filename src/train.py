@@ -84,7 +84,8 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         trust_remote_code=config['model']['trust_remote_code'],
         torch_dtype=torch.bfloat16,
         device_map=config['hardware']['device_map'],
-        low_cpu_mem_usage=True
+        low_cpu_mem_usage=True,
+        attn_implementation="flash_attention_2"  # Faster attention if available
     )
     
     # Enable gradient checkpointing to save memory
