@@ -64,4 +64,4 @@ hardware:
   
 evaluation:
   metric: "f1_macro"  # Für Multi-Label-Klassifikation
-  batch_size: 8
+  batch_size: 1  # Match training batch size
