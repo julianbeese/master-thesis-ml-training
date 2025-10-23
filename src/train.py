@@ -126,7 +126,7 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
         eval_steps=config['training']['eval_steps'],
         save_steps=config['training']['save_steps'],
         save_total_limit=config['training']['save_total_limit'],
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         save_strategy="steps",
         load_best_model_at_end=True,
         metric_for_best_model=config['evaluation']['metric'],
