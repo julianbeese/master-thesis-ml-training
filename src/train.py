@@ -114,7 +114,7 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
         per_device_train_batch_size=config['training']['batch_size'],
         per_device_eval_batch_size=config['evaluation']['batch_size'],
         gradient_accumulation_steps=config['training']['gradient_accumulation_steps'],
-        learning_rate=config['training']['learning_rate'],
+        learning_rate=float(config['training']['learning_rate']),
         weight_decay=config['training']['weight_decay'],
         warmup_steps=config['training']['warmup_steps'],
         max_grad_norm=config['training']['max_grad_norm'],
