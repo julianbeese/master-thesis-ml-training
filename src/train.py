@@ -24,7 +24,7 @@ from peft import (
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 import numpy as np
 
-from data_loader import DuckDBDataLoader
+from data_loader import CSVDataLoader
 
 
 # Nutze Standard Trainer - CrossEntropyLoss wird automatisch für Multi-Class verwendet
@@ -157,7 +157,7 @@ def main():
     
     # Daten laden
     print("Lade Daten...")
-    data_loader = DuckDBDataLoader(str(config_path))
+    data_loader = CSVDataLoader(str(config_path))
     label_info = data_loader.get_label_info()
     num_labels = label_info['num_labels']
     

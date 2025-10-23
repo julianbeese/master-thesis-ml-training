@@ -1,8 +1,7 @@
 """
-Data Loader für DuckDB Training Data
-Lädt Daten aus der DuckDB-Datenbank und bereitet sie für das Training vor.
+Data Loader für CSV Training Data
+Lädt Daten aus CSV-Dateien und bereitet sie für das Training vor.
 """
-import duckdb
 import pandas as pd
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
@@ -43,44 +42,32 @@ class DebateDataset(Dataset):
         }
 
 
-class DuckDBDataLoader:
-    """Lädt Daten aus DuckDB und erstellt PyTorch Datasets"""
+class CSVDataLoader:
+    """Lädt Daten aus CSV-Dateien und erstellt PyTorch Datasets"""
     
     def __init__(self, config_path: str):
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
         
-        self.db_path = Path(config_path).parent.parent / self.config['data']['database_path']
-        self.table_name = self.config['data']['table_name']
+        # CSV Pfade aus Config laden
+        data_dir = Path(config_path).parent.parent / self.config['data'].get('data_dir', 'data')
+        self.train_csv = data_dir / self.config['data'].get('train_csv', 'training_data_export.csv')
+        self.test_csv = data_dir / self.config['data'].get('test_csv', 'test_data_export.csv')
+        
         self.text_column = self.config['data']['text_column']
         self.label_column = self.config['data']['label_column']
-        self.split_column = self.config['data']['split_column']
         self.max_length = self.config['data']['max_length']
         self.label2id = self.config['data']['label2id']
         self.id2label = {v: k for k, v in self.label2id.items()}
         self.num_labels = self.config['data']['num_labels']
         
     def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Lädt Train und Test Daten aus DuckDB"""
-        print(f"Lade Daten aus {self.db_path}...")
+        """Lädt Train und Test Daten aus CSV-Dateien"""
+        print(f"Lade Train-Daten aus {self.train_csv}...")
+        train_df = pd.read_csv(self.train_csv)
         
-        conn = duckdb.connect(str(self.db_path), read_only=True)
-        
-        # Train Daten laden
-        train_query = f"""
-        SELECT * FROM {self.table_name}
-        WHERE {self.split_column} = '{self.config['data']['train_split']}'
-        """
-        train_df = conn.execute(train_query).fetchdf()
-        
-        # Test Daten laden
-        test_query = f"""
-        SELECT * FROM {self.table_name}
-        WHERE {self.split_column} = '{self.config['data']['test_split']}'
-        """
-        test_df = conn.execute(test_query).fetchdf()
-        
-        conn.close()
+        print(f"Lade Test-Daten aus {self.test_csv}...")
+        test_df = pd.read_csv(self.test_csv)
         
         print(f"Train Samples: {len(train_df)}")
         print(f"Test Samples: {len(test_df)}")
@@ -140,7 +127,7 @@ def main():
     
     config_path = Path(__file__).parent.parent / "config" / "training_config.yaml"
     
-    loader = DuckDBDataLoader(config_path)
+    loader = CSVDataLoader(config_path)
     
     # Label Info anzeigen
     label_info = loader.get_label_info()

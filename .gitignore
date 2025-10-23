@@ -59,6 +59,13 @@ mlruns/
 .tensorboard/
 lightning_logs/
 
+# SSH Keys and secrets
+runpod_key
+*_key
+*.pem
+*.key
+id_rsa*
+
 # IDE
 .vscode/
 .idea/

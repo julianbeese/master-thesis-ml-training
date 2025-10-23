@@ -124,12 +124,13 @@ class FineTuningPipeline:
         """Bereitet Daten für Hugging Face Fine-Tuning vor"""
         print("Bereite Hugging Face Fine-Tuning Daten vor...")
         
-        # Lade Training-Daten
-        train_file = self.training_data_dir / "train.jsonl"
-        test_file = self.training_data_dir / "test.jsonl"
+        # Lade Training-Daten (CSV Format)
+        train_file = self.training_data_dir / "training_data_export.csv"
+        test_file = self.training_data_dir / "test_data_export.csv"
         
         if not train_file.exists() or not test_file.exists():
             print("✗ Training/Test-Dateien nicht gefunden!")
+            print(f"Erwartet: {train_file} und {test_file}")
             return None
         
         # Erstelle Dataset-Verzeichnis
@@ -138,8 +139,8 @@ class FineTuningPipeline:
         
         # Kopiere Dateien
         import shutil
-        shutil.copy2(train_file, dataset_dir / "train.jsonl")
-        shutil.copy2(test_file, dataset_dir / "test.jsonl")
+        shutil.copy2(train_file, dataset_dir / "train.csv")
+        shutil.copy2(test_file, dataset_dir / "test.csv")
         
         print(f"✓ Hugging Face Daten vorbereitet: {dataset_dir}")
         return {"dataset_dir": str(dataset_dir)}
@@ -168,12 +169,10 @@ OUTPUT_DIR = "frame_classification_model"
 FRAME_LABELS = ["Human Impact", "Powerlessness", "Economic", "Moral Value", "Conflict", "Other"]
 
 def load_data(file_path):
-    """Lädt JSONL-Daten"""
-    data = []
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            data.append(json.loads(line))
-    return data
+    """Lädt CSV-Daten"""
+    import pandas as pd
+    df = pd.read_csv(file_path)
+    return df.to_dict('records')
 
 def tokenize_function(examples):
     """Tokenisiert Texte"""
@@ -196,8 +195,8 @@ def compute_metrics(eval_pred):
 
 # Lade Daten
 print("Lade Daten...")
-train_data = load_data(f"{{DATASET_DIR}}/train.jsonl")
-test_data = load_data(f"{{DATASET_DIR}}/test.jsonl")
+train_data = load_data(f"{{DATASET_DIR}}/train.csv")
+test_data = load_data(f"{{DATASET_DIR}}/test.csv")
 
 # Erstelle Label-Mapping
 label2id = {{label: i for i, label in enumerate(FRAME_LABELS)}}
