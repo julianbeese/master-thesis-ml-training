@@ -50,7 +50,7 @@ training:
   # Logging
   logging_steps: 10
   eval_steps: 200  # Less frequent evaluation for speed
-  save_steps: 500
+  save_steps: 400  # Must be multiple of eval_steps
   save_total_limit: 2  # Keep fewer checkpoints
   
   # Output
