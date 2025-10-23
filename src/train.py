@@ -73,6 +73,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
     # Padding Token setzen falls nicht vorhanden
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.eos_token_id
     
     # Model für Multi-Class-Klassifikation laden (verwendet bereits Mxfp4 Quantisierung)
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -87,6 +88,9 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         low_cpu_mem_usage=True,
         attn_implementation="flash_attention_2"  # Faster attention if available
     )
+    
+    # Set pad_token_id in model config
+    model.config.pad_token_id = tokenizer.pad_token_id
     
     # Enable gradient checkpointing to save memory
     model.gradient_checkpointing_enable()
