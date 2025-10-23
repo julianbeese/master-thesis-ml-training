@@ -1,8 +1,8 @@
 # Training Configuration for GPT-OSS-20B Fine-tuning
 model:
-  name: "gpt-oss-20b"
-  base_model: "openai/gpt-oss-20b"  # Hugging Face model ID
-  trust_remote_code: true
+  name: "llama-3.1-8b"
+  base_model: "meta-llama/Llama-3.1-8B"  # Kleineres Model (fits in 32GB VRAM)
+  trust_remote_code: false
   
 data:
   # CSV Daten-Konfiguration
