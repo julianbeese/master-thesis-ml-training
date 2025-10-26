@@ -13,7 +13,7 @@ data:
   validation_csv: "training_data_lang_15pct_1.csv"
   test_csv: "training_data_lang_15pct_2.csv"
   text_column: "chunk_text"
-  label_column: "frame_name"
+  label_column: "openai_frame_classification"
   max_length: 128  # Drastically reduced for memory efficiency
   
   # Label mapping (same as classification)
