@@ -1,13 +1,13 @@
 """
-Training Script für GPT-OSS-20B Fine-Tuning mit LoRA
-Multi-Label-Klassifikation für Brexit Debate Daten
+Training Script für Supervised Fine-Tuning mit LoRA
+Frame-Classification für Brexit Debate Daten
 """
 import os
 import yaml
 import torch
 import wandb
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -18,16 +18,12 @@ from transformers import (
 from peft import (
     LoraConfig,
     get_peft_model,
-    TaskType,
-    prepare_model_for_kbit_training
+    TaskType
 )
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 import numpy as np
 
-from data_loader import CSVDataLoader
-
-
-# Nutze Standard Trainer - CrossEntropyLoss wird automatisch für Multi-Class verwendet
+from data_loader import SFTDataLoader
 
 
 def compute_metrics(eval_pred):
@@ -75,7 +71,11 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.eos_token_id
     
-    # Model für Multi-Class-Klassifikation laden (verwendet bereits Mxfp4 Quantisierung)
+    # Determine device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Model für Multi-Class-Klassifikation laden
+    # Don't use device_map="auto" with LoRA as it can cause issues with meta devices
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
@@ -83,11 +83,11 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         id2label=id2label,
         problem_type="single_label_classification",
         trust_remote_code=config['model']['trust_remote_code'],
-        torch_dtype=torch.bfloat16,
-        device_map=config['hardware']['device_map'],
-        low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2"  # Faster attention if available
+        torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
     )
+    
+    # Move model to device
+    model = model.to(device)
     
     # Set pad_token_id in model config
     model.config.pad_token_id = tokenizer.pad_token_id
@@ -159,14 +159,14 @@ def main():
     
     # Weights & Biases initialisieren
     wandb.init(
-        project="gpt-oss-20b-brexit-debates",
+        project="supervised-finetuning-brexit-debates",
         config=config,
-        name=f"gpt-oss-20b-lora-{config['training']['learning_rate']}"
+        name=f"mistral-7b-sft-{config['training']['learning_rate']}"
     )
     
     # Daten laden
     print("Lade Daten...")
-    data_loader = CSVDataLoader(str(config_path))
+    data_loader = SFTDataLoader(str(config_path))
     label_info = data_loader.get_label_info()
     num_labels = label_info['num_labels']
     
@@ -199,7 +199,7 @@ def main():
     
     # Training starten
     print("\n" + "="*50)
-    print("Starte Training...")
+    print("Starte Supervised Fine-Tuning...")
     print("="*50 + "\n")
     
     train_result = trainer.train()
@@ -227,7 +227,7 @@ def main():
     trainer.save_metrics("test", test_metrics)
     
     print("\n" + "="*50)
-    print("Training abgeschlossen!")
+    print("Supervised Fine-Tuning abgeschlossen!")
     print("="*50)
     print(f"\nValidation Metriken:")
     for key, value in eval_metrics.items():

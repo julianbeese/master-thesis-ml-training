@@ -4,8 +4,7 @@
 .env.*.local
 
 # Data directory
-/data
-data/
+/data/old
 
 # Python
 __pycache__/
@@ -58,6 +57,18 @@ wandb/
 mlruns/
 .tensorboard/
 lightning_logs/
+
+# Pipeline outputs
+classification/outputs/
+classification/checkpoints/
+supervised_finetuning/outputs/
+supervised_finetuning/checkpoints/
+
+# Old structure (deprecated)
+/outputs/
+/checkpoints/
+/src/__pycache__/
+/scripts/__pycache__/
 
 # SSH Keys and secrets
 runpod_key

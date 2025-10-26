@@ -178,10 +178,9 @@ def main():
     
     # Datasets erstellen
     print("Erstelle Datasets...")
-    train_dataset, validation_dataset, test_dataset = data_loader.prepare_datasets(tokenizer)
+    train_dataset, test_dataset = data_loader.prepare_datasets(tokenizer)
     
     print(f"Train Samples: {len(train_dataset)}")
-    print(f"Validation Samples: {len(validation_dataset)}")
     print(f"Test Samples: {len(test_dataset)}")
     
     # Training Arguments
@@ -192,7 +191,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=validation_dataset,
+        eval_dataset=test_dataset,
         compute_metrics=compute_metrics,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
     )
@@ -214,26 +213,17 @@ def main():
     trainer.save_model(str(checkpoint_dir / "final_model"))
     tokenizer.save_pretrained(str(checkpoint_dir / "final_model"))
     
-    # Evaluation auf Validation Set
-    print("\nEvaluiere Model auf Validation Set...")
+    # Evaluation
+    print("\nEvaluiere Model...")
     eval_metrics = trainer.evaluate()
     trainer.log_metrics("eval", eval_metrics)
     trainer.save_metrics("eval", eval_metrics)
     
-    # Finale Evaluation auf Test Set
-    print("\nFinale Evaluation auf Test Set...")
-    test_metrics = trainer.evaluate(eval_dataset=test_dataset)
-    trainer.log_metrics("test", test_metrics)
-    trainer.save_metrics("test", test_metrics)
-    
     print("\n" + "="*50)
     print("Training abgeschlossen!")
     print("="*50)
-    print(f"\nValidation Metriken:")
+    print(f"\nFinale Metriken:")
     for key, value in eval_metrics.items():
-        print(f"  {key}: {value:.4f}")
-    print(f"\nTest Metriken:")
-    for key, value in test_metrics.items():
         print(f"  {key}: {value:.4f}")
     
     wandb.finish()

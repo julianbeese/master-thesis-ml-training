@@ -1,19 +1,22 @@
-# Training Configuration for GPT-OSS-20B Fine-tuning
+# Training Configuration for Supervised Fine-Tuning
+# Using CSV training data from /data folder
+
 model:
-  name: "mistral-7b"
-  base_model: "mistralai/Mistral-7B-v0.1"  # Kein Gate, fits in 32GB VRAM
+  name: "mistral-7b-sft"
+  base_model: "mistralai/Mistral-7B-v0.1"
   trust_remote_code: false
   
 data:
-  # CSV Daten-Konfiguration
-  data_dir: "data"
+  # CSV Daten-Konfiguration für Supervised Fine-Tuning
+  data_dir: "../data"  # Relative path from supervised_finetuning directory
   train_csv: "training_data_lang_70pct.csv"
   validation_csv: "training_data_lang_15pct_1.csv"
   test_csv: "training_data_lang_15pct_2.csv"
   text_column: "chunk_text"
-  label_column: "frame_name"  # Single label column (Spaltenname in CSV)
-  max_length: 512  # Reduced from 2048 for faster training
-  # Label mapping
+  label_column: "frame_name"
+  max_length: 512
+  
+  # Label mapping (same as classification)
   label2id:
     "Conflict": 0
     "Moral Value": 1
@@ -31,18 +34,18 @@ training:
   lora_dropout: 0.05
   lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
   
-  # Training Hyperparameters
-  num_epochs: 3
-  batch_size: 2  # Increased for faster training
-  gradient_accumulation_steps: 16  # Effektive Batch Size: 32
-  learning_rate: 2e-4
+  # Training Hyperparameters (optimized for SFT)
+  num_epochs: 5
+  batch_size: 4
+  gradient_accumulation_steps: 8  # Effective batch size: 32
+  learning_rate: 5e-5  # Lower learning rate for fine-tuning
   weight_decay: 0.01
-  warmup_steps: 100
+  warmup_steps: 200
   max_grad_norm: 1.0
   
   # Mixed Precision Training
   fp16: false
-  bf16: true  # RTX 5090 (Blackwell) unterstützt BF16 nativ
+  bf16: true
   
   # Optimizer
   optimizer: "adamw_torch"
@@ -50,9 +53,9 @@ training:
   
   # Logging
   logging_steps: 10
-  eval_steps: 200  # Less frequent evaluation for speed
-  save_steps: 400  # Must be multiple of eval_steps
-  save_total_limit: 2  # Keep fewer checkpoints
+  eval_steps: 200
+  save_steps: 400
+  save_total_limit: 3
   
   # Output
   output_dir: "./outputs"
@@ -64,5 +67,5 @@ hardware:
   device_map: "auto"
   
 evaluation:
-  metric: "f1_macro"  # Für Multi-Label-Klassifikation
-  batch_size: 2  # Match training batch size
+  metric: "f1_macro"
+  batch_size: 4

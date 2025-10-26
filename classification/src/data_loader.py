@@ -51,9 +51,8 @@ class CSVDataLoader:
         
         # CSV Pfade aus Config laden
         data_dir = Path(config_path).parent.parent / self.config['data'].get('data_dir', 'data')
-        self.train_csv = data_dir / self.config['data'].get('train_csv', 'training_data_lang_70pct.csv')
-        self.validation_csv = data_dir / self.config['data'].get('validation_csv', 'training_data_lang_15pct_1.csv')
-        self.test_csv = data_dir / self.config['data'].get('test_csv', 'training_data_lang_15pct_2.csv')
+        self.train_csv = data_dir / self.config['data'].get('train_csv', 'training_data_export.csv')
+        self.test_csv = data_dir / self.config['data'].get('test_csv', 'test_data_export.csv')
         
         self.text_column = self.config['data']['text_column']
         self.label_column = self.config['data']['label_column']
@@ -62,38 +61,30 @@ class CSVDataLoader:
         self.id2label = {v: k for k, v in self.label2id.items()}
         self.num_labels = self.config['data']['num_labels']
         
-    def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Lädt Train, Validation und Test Daten aus CSV-Dateien"""
+    def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Lädt Train und Test Daten aus CSV-Dateien"""
         print(f"Lade Train-Daten aus {self.train_csv}...")
         train_df = pd.read_csv(self.train_csv)
-        
-        print(f"Lade Validation-Daten aus {self.validation_csv}...")
-        validation_df = pd.read_csv(self.validation_csv)
         
         print(f"Lade Test-Daten aus {self.test_csv}...")
         test_df = pd.read_csv(self.test_csv)
         
         print(f"Train Samples: {len(train_df)}")
-        print(f"Validation Samples: {len(validation_df)}")
         print(f"Test Samples: {len(test_df)}")
         
-        return train_df, validation_df, test_df
+        return train_df, test_df
     
     def encode_labels(self, labels: pd.Series) -> List[int]:
         """Konvertiert Label-Strings zu IDs"""
         return [self.label2id.get(label, self.label2id["None"]) for label in labels]
     
-    def prepare_datasets(self, tokenizer) -> Tuple[DebateDataset, DebateDataset, DebateDataset]:
-        """Bereitet Train, Validation und Test Datasets vor"""
-        train_df, validation_df, test_df = self.load_data()
+    def prepare_datasets(self, tokenizer) -> Tuple[DebateDataset, DebateDataset]:
+        """Bereitet Train und Test Datasets vor"""
+        train_df, test_df = self.load_data()
         
         # Train Dataset
         train_texts = train_df[self.text_column].tolist()
         train_labels = self.encode_labels(train_df[self.label_column])
-        
-        # Validation Dataset
-        validation_texts = validation_df[self.text_column].tolist()
-        validation_labels = self.encode_labels(validation_df[self.label_column])
         
         # Test Dataset
         test_texts = test_df[self.text_column].tolist()
@@ -106,13 +97,6 @@ class CSVDataLoader:
             self.max_length
         )
         
-        validation_dataset = DebateDataset(
-            validation_texts, 
-            validation_labels, 
-            tokenizer, 
-            self.max_length
-        )
-        
         test_dataset = DebateDataset(
             test_texts, 
             test_labels, 
@@ -120,11 +104,11 @@ class CSVDataLoader:
             self.max_length
         )
         
-        return train_dataset, validation_dataset, test_dataset
+        return train_dataset, test_dataset
     
     def get_label_info(self) -> Dict:
         """Gibt Informationen über die Labels zurück"""
-        train_df, _, _ = self.load_data()
+        train_df, _ = self.load_data()
         
         info = {
             'num_labels': self.num_labels,
