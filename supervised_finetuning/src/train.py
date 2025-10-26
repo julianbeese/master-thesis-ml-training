@@ -74,8 +74,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
     # Determine device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # Model für Multi-Class-Klassifikation laden
-    # Don't use device_map="auto" with LoRA as it can cause issues with meta devices
+    # Model für Multi-Class-Klassifikation laden (speichereffizient)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
@@ -84,6 +83,8 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         problem_type="single_label_classification",
         trust_remote_code=config['model']['trust_remote_code'],
         torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
+        load_in_8bit=True,  # 8-bit quantization for memory efficiency
+        low_cpu_mem_usage=True
     )
     
     # Move model to device
@@ -98,6 +99,10 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
     # LoRA Configuration
     if config['training']['use_lora']:
         print("Konfiguriere LoRA...")
+        
+        # Prepare model for k-bit training if using quantization
+        if hasattr(model, 'is_quantized') and model.is_quantized:
+            model = prepare_model_for_kbit_training(model)
         
         lora_config = LoraConfig(
             r=config['training']['lora_r'],

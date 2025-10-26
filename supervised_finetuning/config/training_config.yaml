@@ -14,7 +14,7 @@ data:
   test_csv: "training_data_lang_15pct_2.csv"
   text_column: "chunk_text"
   label_column: "frame_name"
-  max_length: 512
+  max_length: 256  # Reduced for memory efficiency
   
   # Label mapping (same as classification)
   label2id:
@@ -36,8 +36,8 @@ training:
   
   # Training Hyperparameters (optimized for SFT)
   num_epochs: 5
-  batch_size: 4
-  gradient_accumulation_steps: 8  # Effective batch size: 32
+  batch_size: 1  # Reduced for memory efficiency
+  gradient_accumulation_steps: 4  # Effective batch size: 4
   learning_rate: 5e-5  # Lower learning rate for fine-tuning
   weight_decay: 0.01
   warmup_steps: 200
@@ -68,4 +68,4 @@ hardware:
   
 evaluation:
   metric: "f1_macro"
-  batch_size: 4
+  batch_size: 1  # Reduced for memory efficiency

@@ -75,7 +75,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.eos_token_id
     
-    # Model für Multi-Class-Klassifikation laden (verwendet bereits Mxfp4 Quantisierung)
+    # Model für Multi-Class-Klassifikation laden (speichereffizient)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
@@ -86,7 +86,8 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         torch_dtype=torch.bfloat16,
         device_map=config['hardware']['device_map'],
         low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2"  # Faster attention if available
+        attn_implementation="flash_attention_2",  # Faster attention if available
+        load_in_8bit=True  # 8-bit quantization for memory efficiency
     )
     
     # Set pad_token_id in model config
@@ -98,6 +99,10 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
     # LoRA Configuration
     if config['training']['use_lora']:
         print("Konfiguriere LoRA...")
+        
+        # Prepare model for k-bit training if using quantization
+        if hasattr(model, 'is_quantized') and model.is_quantized:
+            model = prepare_model_for_kbit_training(model)
         
         lora_config = LoraConfig(
             r=config['training']['lora_r'],
