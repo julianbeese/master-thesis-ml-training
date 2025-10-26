@@ -5,7 +5,7 @@ Multi-Label-Klassifikation für Brexit Debate Daten
 import os
 import yaml
 import torch
-import wandb
+# import wandb  # Disabled for now
 from pathlib import Path
 from typing import Dict, Optional
 from transformers import (
@@ -162,7 +162,7 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
         load_best_model_at_end=True,
         metric_for_best_model=config['evaluation']['metric'],
         greater_is_better=True,
-        report_to="wandb" if use_gpu else None,  # Only use wandb on GPU
+        report_to=None,  # Disabled W&B for now
         logging_first_step=True,
         remove_unused_columns=False,
         dataloader_pin_memory=use_gpu,  # Pin memory only on GPU
@@ -182,12 +182,12 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     
-    # Weights & Biases initialisieren
-    wandb.init(
-        project="gpt-oss-20b-brexit-debates",
-        config=config,
-        name=f"gpt-oss-20b-lora-{config['training']['learning_rate']}"
-    )
+    # Weights & Biases initialisieren (disabled for now)
+    # wandb.init(
+    #     project="gpt-oss-20b-brexit-debates",
+    #     config=config,
+    #     name=f"gpt-oss-20b-lora-{config['training']['learning_rate']}"
+    # )
     
     # Daten laden
     print("Lade Daten...")
@@ -261,7 +261,7 @@ def main():
     for key, value in test_metrics.items():
         print(f"  {key}: {value:.4f}")
     
-    wandb.finish()
+    # wandb.finish()  # Disabled for now
 
 
 if __name__ == "__main__":
