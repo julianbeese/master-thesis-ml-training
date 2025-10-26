@@ -75,6 +75,14 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.eos_token_id
     
+    # Check CUDA availability
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    
     # Model für Multi-Class-Klassifikation laden (speichereffizient)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
@@ -83,12 +91,19 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         id2label=id2label,
         problem_type="single_label_classification",
         trust_remote_code=config['model']['trust_remote_code'],
-        torch_dtype=torch.bfloat16,
-        device_map=config['hardware']['device_map'],
+        torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+        device_map="auto" if torch.cuda.is_available() else None,
         low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2",  # Faster attention if available
-        load_in_4bit=True  # 4-bit quantization for maximum memory efficiency
+        attn_implementation="flash_attention_2" if torch.cuda.is_available() else None,
+        load_in_4bit=torch.cuda.is_available()  # Only use 4-bit on GPU
     )
+    
+    # Explicitly move model to GPU if available
+    if torch.cuda.is_available():
+        model = model.to(device)
+        print(f"Model moved to GPU: {device}")
+    else:
+        print("WARNING: CUDA not available, running on CPU!")
     
     # Set pad_token_id in model config
     model.config.pad_token_id = tokenizer.pad_token_id
@@ -121,6 +136,9 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
 
 def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
     """Erstellt TrainingArguments aus Config"""
+    # GPU-optimized settings
+    use_gpu = torch.cuda.is_available()
+    
     return TrainingArguments(
         output_dir=str(output_dir),
         num_train_epochs=config['training']['num_epochs'],
@@ -131,8 +149,8 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
         weight_decay=config['training']['weight_decay'],
         warmup_steps=config['training']['warmup_steps'],
         max_grad_norm=config['training']['max_grad_norm'],
-        fp16=config['training']['fp16'],
-        bf16=config['training']['bf16'],
+        fp16=config['training']['fp16'] and use_gpu,  # Only use FP16 on GPU
+        bf16=config['training']['bf16'] and use_gpu,  # Only use BF16 on GPU
         optim=config['training']['optimizer'],
         lr_scheduler_type=config['training']['lr_scheduler'],
         logging_steps=config['training']['logging_steps'],
@@ -144,9 +162,11 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
         load_best_model_at_end=True,
         metric_for_best_model=config['evaluation']['metric'],
         greater_is_better=True,
-        report_to="wandb",
+        report_to="wandb" if use_gpu else None,  # Only use wandb on GPU
         logging_first_step=True,
         remove_unused_columns=False,
+        dataloader_pin_memory=use_gpu,  # Pin memory only on GPU
+        dataloader_num_workers=4 if use_gpu else 0,  # More workers on GPU
     )
 
 

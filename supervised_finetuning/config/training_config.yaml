@@ -62,7 +62,7 @@ training:
   checkpoint_dir: "./checkpoints"
   
 hardware:
-  gpu: "RTX_5090"
+  gpu: "H100"  # RunPod H100
   num_gpus: 1
   device_map: "auto"
   
