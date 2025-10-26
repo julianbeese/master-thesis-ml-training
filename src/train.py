@@ -87,7 +87,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         device_map=config['hardware']['device_map'],
         low_cpu_mem_usage=True,
         attn_implementation="flash_attention_2",  # Faster attention if available
-        load_in_8bit=True  # 8-bit quantization for memory efficiency
+        load_in_4bit=True  # 4-bit quantization for maximum memory efficiency
     )
     
     # Set pad_token_id in model config

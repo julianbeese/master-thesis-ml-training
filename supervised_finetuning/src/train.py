@@ -83,7 +83,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict):
         problem_type="single_label_classification",
         trust_remote_code=config['model']['trust_remote_code'],
         torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
-        load_in_8bit=True,  # 8-bit quantization for memory efficiency
+        load_in_4bit=True,  # 4-bit quantization for maximum memory efficiency
         low_cpu_mem_usage=True
     )
     

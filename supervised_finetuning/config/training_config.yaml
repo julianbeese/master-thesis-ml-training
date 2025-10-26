@@ -14,7 +14,7 @@ data:
   test_csv: "training_data_lang_15pct_2.csv"
   text_column: "chunk_text"
   label_column: "frame_name"
-  max_length: 256  # Reduced for memory efficiency
+  max_length: 128  # Drastically reduced for memory efficiency
   
   # Label mapping (same as classification)
   label2id:
@@ -29,15 +29,15 @@ data:
 training:
   # LoRA Configuration für effizientes Training
   use_lora: true
-  lora_r: 16
-  lora_alpha: 32
+  lora_r: 4  # Drastically reduced for memory efficiency
+  lora_alpha: 8  # Drastically reduced
   lora_dropout: 0.05
-  lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  lora_target_modules: ["q_proj", "v_proj"]  # Minimal target modules
   
   # Training Hyperparameters (optimized for SFT)
   num_epochs: 5
   batch_size: 1  # Reduced for memory efficiency
-  gradient_accumulation_steps: 4  # Effective batch size: 4
+  gradient_accumulation_steps: 2  # Effective batch size: 2
   learning_rate: 5e-5  # Lower learning rate for fine-tuning
   weight_decay: 0.01
   warmup_steps: 200

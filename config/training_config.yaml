@@ -12,7 +12,7 @@ data:
   test_csv: "training_data_lang_15pct_2.csv"
   text_column: "chunk_text"
   label_column: "frame_name"  # Single label column (Spaltenname in CSV)
-  max_length: 256  # Further reduced for memory efficiency
+  max_length: 128  # Drastically reduced for memory efficiency
   # Label mapping
   label2id:
     "Conflict": 0
@@ -26,15 +26,15 @@ data:
 training:
   # LoRA Configuration für effizientes Training
   use_lora: true
-  lora_r: 8  # Reduced from 16 for memory efficiency
-  lora_alpha: 16  # Reduced from 32
+  lora_r: 4  # Further reduced for memory efficiency
+  lora_alpha: 8  # Further reduced
   lora_dropout: 0.05
-  lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]  # Reduced target modules
+  lora_target_modules: ["q_proj", "v_proj"]  # Minimal target modules
   
   # Training Hyperparameters
   num_epochs: 3
   batch_size: 1  # Reduced for memory efficiency
-  gradient_accumulation_steps: 8  # Effektive Batch Size: 8
+  gradient_accumulation_steps: 4  # Effektive Batch Size: 4
   learning_rate: 2e-4
   weight_decay: 0.01
   warmup_steps: 100
