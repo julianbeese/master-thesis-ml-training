@@ -11,10 +11,10 @@ pip install datasets hf_transfer python-dotenv
 ### 2. Environment Variable setzen
 ```bash
 # Option 1: .env Datei erstellen
-echo "HF_TOKEN=***REMOVED***" > /workspace/master-thesis-ml-training/.env
+echo "HF_TOKEN=dein_token_hier" > /workspace/master-thesis-ml-training/.env
 
 # Option 2: Environment Variable setzen
-export HF_TOKEN=***REMOVED***
+export HF_TOKEN=dein_token_hier
 ```
 
 ### 3. Training starten
