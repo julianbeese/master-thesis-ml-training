@@ -183,9 +183,9 @@ def main():
         print("🚀 RTX 5090 Optimierungen aktiviert")
     
     # Hugging Face Token für gated models
-    hf_token = os.environ.get("HF_TOKEN")
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
     if not hf_token:
-        print("⚠️  HF_TOKEN nicht gefunden!")
+        print("⚠️  HF_TOKEN oder HUGGINGFACE_TOKEN nicht gefunden!")
         print("   Erstelle .env mit HF_TOKEN=dein_token")
         print("   oder setze HF_TOKEN='dein_token' als Umgebungsvariable")
         hf_token = None
