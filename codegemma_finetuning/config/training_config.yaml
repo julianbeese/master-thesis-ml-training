@@ -1,0 +1,73 @@
+# Training Configuration for CodeGemma-2-9B Fine-tuning
+# Optimized for RTX 5090 (31.4 GB VRAM) on RunPod
+# Using EpistemeAI/EpistemeAI-codegemma-2-9b for Frame-Classification
+
+model:
+  name: "codegemma-2-9b-sft"
+  base_model: "EpistemeAI/EpistemeAI-codegemma-2-9b"
+  trust_remote_code: false
+  
+data:
+  # CSV Daten-Konfiguration für CodeGemma Fine-Tuning
+  data_dir: "../../data"  # Relative path from codegemma_finetuning directory
+  train_csv: "training_data_lang_70pct.csv"
+  validation_csv: "training_data_lang_15pct_1.csv"
+  test_csv: "training_data_lang_15pct_2.csv"
+  text_column: "chunk_text"
+  label_column: "openai_frame_classification"
+  max_length: 512  # Increased for RTX 5090's large VRAM
+  
+  # Label mapping (same as other pipelines)
+  label2id:
+    "Conflict": 0
+    "Moral Value": 1
+    "Economic": 2
+    "Powerlessness": 3
+    "None": 4
+    "Human Impact": 5
+  num_labels: 6
+  
+training:
+  # LoRA Configuration für RTX 5090 (optimized for large VRAM)
+  use_lora: true
+  lora_r: 16  # Higher rank for better adaptation with RTX 5090
+  lora_alpha: 32  # Higher alpha for better learning
+  lora_dropout: 0.05  # Lower dropout for better performance
+  lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  
+  # Training Hyperparameters (optimized for RTX 5090)
+  num_epochs: 5  # More epochs with better hardware
+  batch_size: 8  # Larger batch size for RTX 5090
+  gradient_accumulation_steps: 2  # Effective batch size: 16
+  learning_rate: 2e-5  # Optimized learning rate
+  weight_decay: 0.01
+  warmup_steps: 200  # More warmup steps
+  max_grad_norm: 1.0
+  
+  # Mixed Precision Training (RTX 5090 optimized)
+  fp16: false
+  bf16: true  # RTX 5090 supports BF16 natively with excellent performance
+  
+  # Optimizer
+  optimizer: "adamw_torch"
+  lr_scheduler: "cosine"
+  
+  # Logging (more frequent with better hardware)
+  logging_steps: 5
+  eval_steps: 100
+  save_steps: 200
+  save_total_limit: 5  # Keep more checkpoints
+  
+  # Output
+  output_dir: "./outputs"
+  checkpoint_dir: "./checkpoints"
+  
+hardware:
+  gpu: "RTX 5090"  # RunPod RTX 5090 with 31.4 GB VRAM
+  num_gpus: 1
+  device_map: "auto"
+  memory_fraction: 0.95  # Use 95% of available VRAM
+  
+evaluation:
+  metric: "f1_macro"
+  batch_size: 8  # Match training batch size for RTX 5090

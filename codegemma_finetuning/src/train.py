@@ -1,6 +1,6 @@
 """
-Training Script für GPT-OSS-20B Fine-Tuning mit LoRA
-Multi-Label-Klassifikation für Brexit Debate Daten
+Training Script für CodeGemma-2-9B Fine-Tuning mit LoRA
+Frame-Classification für Brexit Debate Daten
 """
 import os
 import yaml
@@ -25,10 +25,7 @@ from peft import (
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 import numpy as np
 
-from data_loader import CSVDataLoader
-
-
-# Nutze Standard Trainer - CrossEntropyLoss wird automatisch für Multi-Class verwendet
+from data_loader import CodeGemmaDataLoader
 
 
 def compute_metrics(eval_pred):
@@ -57,13 +54,13 @@ def compute_metrics(eval_pred):
 
 
 def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = None):
-    """Initialisiert Model und Tokenizer mit LoRA"""
+    """Initialisiert CodeGemma Model und Tokenizer mit LoRA"""
     model_name = config['model']['base_model']
     num_labels = label_info['num_labels']
     label2id = label_info['label2id']
     id2label = label_info['id2label']
     
-    print(f"Lade Model: {model_name}")
+    print(f"Lade CodeGemma Model: {model_name}")
     
     # Tokenizer laden
     tokenizer = AutoTokenizer.from_pretrained(
@@ -79,13 +76,15 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
     
     # Check CUDA availability
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    use_gpu = torch.cuda.is_available()
+    
     print(f"Using device: {device}")
     print(f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
     
-    # Model für Multi-Class-Klassifikation laden (speichereffizient)
+    # Model für Multi-Class-Klassifikation laden (RTX 5090 optimiert)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
@@ -97,7 +96,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
         device_map="auto" if torch.cuda.is_available() else None,
         low_cpu_mem_usage=True,
         # attn_implementation="flash_attention_2" if torch.cuda.is_available() else None,  # Disabled for now
-        load_in_4bit=torch.cuda.is_available(),  # Only use 4-bit on GPU
+        load_in_4bit=False,  # RTX 5090 has enough VRAM for full precision
         token=hf_token
     )
     
@@ -105,62 +104,53 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
     if torch.cuda.is_available():
         model = model.to(device)
         print(f"Model moved to GPU: {device}")
-    else:
-        print("WARNING: CUDA not available, running on CPU!")
     
-    # Set pad_token_id in model config
-    model.config.pad_token_id = tokenizer.pad_token_id
-    
-    # Enable gradient checkpointing to save memory
-    model.gradient_checkpointing_enable()
+    # RTX 5090: No need for k-bit training preparation (full precision)
+    if torch.cuda.is_available():
+        print("RTX 5090: Using full precision training (no quantization)")
+        # model = prepare_model_for_kbit_training(model)  # Not needed for RTX 5090
     
     # LoRA Configuration
     if config['training']['use_lora']:
-        print("Konfiguriere LoRA...")
-        
-        # Prepare model for k-bit training if using quantization
-        if hasattr(model, 'is_quantized') and model.is_quantized:
-            model = prepare_model_for_kbit_training(model)
-        
         lora_config = LoraConfig(
             r=config['training']['lora_r'],
             lora_alpha=config['training']['lora_alpha'],
             target_modules=config['training']['lora_target_modules'],
             lora_dropout=config['training']['lora_dropout'],
             bias="none",
-            task_type=TaskType.SEQ_CLS
+            task_type=TaskType.SEQ_CLS,
         )
         
         model = get_peft_model(model, lora_config)
+        print("LoRA adapters added to model")
+        
+        # Print trainable parameters
         model.print_trainable_parameters()
     
     return model, tokenizer
 
 
-def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
-    """Erstellt TrainingArguments aus Config"""
-    # GPU-optimized settings
-    use_gpu = torch.cuda.is_available()
-    
+def create_training_arguments(config: Dict, output_dir: Path, use_gpu: bool = True) -> TrainingArguments:
+    """Erstellt Training Arguments"""
     return TrainingArguments(
         output_dir=str(output_dir),
         num_train_epochs=config['training']['num_epochs'],
         per_device_train_batch_size=config['training']['batch_size'],
-        per_device_eval_batch_size=config['evaluation']['batch_size'],
+        per_device_eval_batch_size=config['training']['evaluation']['batch_size'],
         gradient_accumulation_steps=config['training']['gradient_accumulation_steps'],
-        learning_rate=float(config['training']['learning_rate']),
+        learning_rate=config['training']['learning_rate'],
         weight_decay=config['training']['weight_decay'],
         warmup_steps=config['training']['warmup_steps'],
         max_grad_norm=config['training']['max_grad_norm'],
-        fp16=config['training']['fp16'] and use_gpu,  # Only use FP16 on GPU
-        bf16=config['training']['bf16'] and use_gpu,  # Only use BF16 on GPU
+        fp16=config['training']['fp16'],
+        bf16=config['training']['bf16'],
         optim=config['training']['optimizer'],
         lr_scheduler_type=config['training']['lr_scheduler'],
         logging_steps=config['training']['logging_steps'],
         eval_steps=config['training']['eval_steps'],
         save_steps=config['training']['save_steps'],
         save_total_limit=config['training']['save_total_limit'],
-        eval_strategy="steps",
+        evaluation_strategy="steps",
         save_strategy="steps",
         load_best_model_at_end=True,
         metric_for_best_model=config['evaluation']['metric'],
@@ -174,6 +164,15 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
 
 
 def main():
+    # RTX 5090 Optimierungen
+    if torch.cuda.is_available():
+        # Setze CUDA optimale Einstellungen für RTX 5090
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = False
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        print("🚀 RTX 5090 Optimierungen aktiviert")
+    
     # Hugging Face Token für gated models
     hf_token = os.environ.get("HF_TOKEN", "***REMOVED***")
     login(token=hf_token)
@@ -192,15 +191,16 @@ def main():
     
     # Weights & Biases initialisieren (disabled for now)
     # wandb.init(
-    #     project="gpt-oss-20b-brexit-debates",
+    #     project="codegemma-brexit-debates",
     #     config=config,
-    #     name=f"gpt-oss-20b-lora-{config['training']['learning_rate']}"
+    #     name=f"codegemma-2-9b-{config['training']['learning_rate']}"
     # )
     
     # Daten laden
     print("Lade Daten...")
-    data_loader = CSVDataLoader(str(config_path))
+    data_loader = CodeGemmaDataLoader(str(config_path))
     label_info = data_loader.get_label_info()
+    
     num_labels = label_info['num_labels']
     
     print(f"\nAnzahl Labels: {num_labels}")
@@ -213,12 +213,15 @@ def main():
     print("Erstelle Datasets...")
     train_dataset, validation_dataset, test_dataset = data_loader.prepare_datasets(tokenizer)
     
-    print(f"Train Samples: {len(train_dataset)}")
-    print(f"Validation Samples: {len(validation_dataset)}")
-    print(f"Test Samples: {len(test_dataset)}")
+    # Training Arguments erstellen
+    use_gpu = torch.cuda.is_available()
+    training_args = create_training_arguments(config, output_dir, use_gpu)
     
-    # Training Arguments
-    training_args = setup_training_args(config, output_dir)
+    # Early Stopping Callback
+    early_stopping = EarlyStoppingCallback(
+        early_stopping_patience=3,
+        early_stopping_threshold=0.001
+    )
     
     # Trainer initialisieren
     trainer = Trainer(
@@ -227,46 +230,29 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=validation_dataset,
         compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        callbacks=[early_stopping]
     )
     
     # Training starten
-    print("\n" + "="*50)
-    print("Starte Training...")
-    print("="*50 + "\n")
+    print("\n🚀 Starte CodeGemma Fine-Tuning...")
+    print(f"Train Samples: {len(train_dataset)}")
+    print(f"Validation Samples: {len(validation_dataset)}")
+    print(f"Test Samples: {len(test_dataset)}")
     
-    train_result = trainer.train()
+    # Training durchführen
+    trainer.train()
     
-    # Metriken speichern
-    metrics = train_result.metrics
-    trainer.log_metrics("train", metrics)
-    trainer.save_metrics("train", metrics)
+    # Bestes Modell speichern
+    print("\n💾 Speichere bestes Modell...")
+    trainer.save_model()
+    tokenizer.save_pretrained(output_dir)
     
-    # Model speichern
-    print("\nSpeichere finales Model...")
-    trainer.save_model(str(checkpoint_dir / "final_model"))
-    tokenizer.save_pretrained(str(checkpoint_dir / "final_model"))
+    # Evaluation auf Test-Set
+    print("\n📊 Evaluierung auf Test-Set...")
+    test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
     
-    # Evaluation auf Validation Set
-    print("\nEvaluiere Model auf Validation Set...")
-    eval_metrics = trainer.evaluate()
-    trainer.log_metrics("eval", eval_metrics)
-    trainer.save_metrics("eval", eval_metrics)
-    
-    # Finale Evaluation auf Test Set
-    print("\nFinale Evaluation auf Test Set...")
-    test_metrics = trainer.evaluate(eval_dataset=test_dataset)
-    trainer.log_metrics("test", test_metrics)
-    trainer.save_metrics("test", test_metrics)
-    
-    print("\n" + "="*50)
-    print("Training abgeschlossen!")
-    print("="*50)
-    print(f"\nValidation Metriken:")
-    for key, value in eval_metrics.items():
-        print(f"  {key}: {value:.4f}")
     print(f"\nTest Metriken:")
-    for key, value in test_metrics.items():
+    for key, value in test_results.items():
         print(f"  {key}: {value:.4f}")
     
     # wandb.finish()  # Disabled for now
