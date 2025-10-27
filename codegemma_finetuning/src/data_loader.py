@@ -23,7 +23,14 @@ class CodeGemmaDataLoader:
             self.config = yaml.safe_load(f)
         
         self.data_config = self.config['data']
-        self.base_path = Path(config_path).resolve().parent.parent.parent
+        # Robust path resolution - try multiple approaches
+        config_file = Path(config_path).resolve()
+        if 'codegemma_finetuning' in str(config_file):
+            # We're in codegemma_finetuning directory
+            self.base_path = config_file.parent.parent.parent
+        else:
+            # Fallback to parent.parent.parent
+            self.base_path = config_file.parent.parent.parent
         
     def get_label_info(self) -> Dict:
         """
@@ -55,6 +62,12 @@ class CodeGemmaDataLoader:
         data_dir = Path(self.data_config['data_dir'])
         if not data_dir.is_absolute():
             data_dir = self.base_path / data_dir
+        
+        # Debug: Print paths for troubleshooting
+        print(f"Debug - Base path: {self.base_path}")
+        print(f"Debug - Data dir config: {self.data_config['data_dir']}")
+        print(f"Debug - Resolved data dir: {data_dir}")
+        print(f"Debug - Data dir exists: {data_dir.exists()}")
         
         csv_path = data_dir / csv_file
         
