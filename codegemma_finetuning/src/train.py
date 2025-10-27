@@ -97,7 +97,7 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
         device_map="auto" if torch.cuda.is_available() else None,
         low_cpu_mem_usage=True,
         # attn_implementation="flash_attention_2" if torch.cuda.is_available() else None,  # Disabled for now
-        load_in_4bit=True,  # Enable 4-bit quantization for memory efficiency
+        load_in_4bit=False,  # Disable quantization for now
         token=hf_token
     )
     
@@ -106,10 +106,10 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
         model = model.to(device)
         print(f"Model moved to GPU: {device}")
     
-    # RTX 5090: Prepare model for k-bit training
+    # RTX 5090: Skip k-bit training preparation for now
     if torch.cuda.is_available():
-        print("RTX 5090: Using 4-bit quantization to fit in memory")
-        model = prepare_model_for_kbit_training(model)  # Enable for memory efficiency
+        print("RTX 5090: Using full precision training (no quantization)")
+        # model = prepare_model_for_kbit_training(model)  # Disabled for now
     
     # LoRA Configuration
     if config['training']['use_lora']:
