@@ -9,7 +9,7 @@ model:
   
 data:
   # CSV Daten-Konfiguration für CodeGemma Fine-Tuning
-  data_dir: "../../data"  # Relative path from codegemma_finetuning directory
+  data_dir: "../data"  # Relative path from codegemma_finetuning directory
   train_csv: "training_data_lang_70pct.csv"
   validation_csv: "training_data_lang_15pct_1.csv"
   test_csv: "training_data_lang_15pct_2.csv"

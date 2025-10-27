@@ -23,7 +23,7 @@ class CodeGemmaDataLoader:
             self.config = yaml.safe_load(f)
         
         self.data_config = self.config['data']
-        self.base_path = Path(config_path).resolve().parent.parent
+        self.base_path = Path(config_path).resolve().parent.parent.parent
         
     def get_label_info(self) -> Dict:
         """
