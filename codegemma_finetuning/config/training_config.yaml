@@ -37,8 +37,8 @@ training:
   
   # Training Hyperparameters (optimized for RTX 5090)
   num_epochs: 5  # More epochs with better hardware
-  batch_size: 8  # Larger batch size for RTX 5090
-  gradient_accumulation_steps: 2  # Effective batch size: 16
+  batch_size: 2  # Smaller batch size to fit in memory
+  gradient_accumulation_steps: 8  # Effective batch size: 16
   learning_rate: 2e-5  # Optimized learning rate
   weight_decay: 0.01
   warmup_steps: 200  # More warmup steps
@@ -70,4 +70,4 @@ hardware:
   
 evaluation:
   metric: "f1_macro"
-  batch_size: 8  # Match training batch size for RTX 5090
+  batch_size: 2  # Match training batch size for RTX 5090

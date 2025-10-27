@@ -108,8 +108,8 @@ def setup_model_and_tokenizer(config: Dict, label_info: Dict, hf_token: str = No
     
     # RTX 5090: No need for k-bit training preparation (full precision)
     if torch.cuda.is_available():
-        print("RTX 5090: Using full precision training (no quantization)")
-        # model = prepare_model_for_kbit_training(model)  # Not needed for RTX 5090
+        print("RTX 5090: Using 4-bit quantization to fit in memory")
+        model = prepare_model_for_kbit_training(model)  # Enable for memory efficiency
     
     # LoRA Configuration
     if config['training']['use_lora']:
