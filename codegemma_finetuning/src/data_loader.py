@@ -77,14 +77,20 @@ class CodeGemmaDataLoader:
         print(f"Lade CSV: {csv_path}")
         df = pd.read_csv(csv_path)
         
+        # Debug: Print CSV info
+        print(f"Debug - CSV Shape: {df.shape}")
+        print(f"Debug - CSV Columns: {list(df.columns)}")
+        print(f"Debug - First few rows:")
+        print(df.head(2))
+        
         # Prüfe ob erforderliche Spalten vorhanden sind
         text_col = self.data_config['text_column']
         label_col = self.data_config['label_column']
         
         if text_col not in df.columns:
-            raise ValueError(f"Text-Spalte '{text_col}' nicht in CSV gefunden")
+            raise ValueError(f"Text-Spalte '{text_col}' nicht in CSV gefunden. Verfügbare Spalten: {list(df.columns)}")
         if label_col not in df.columns:
-            raise ValueError(f"Label-Spalte '{label_col}' nicht in CSV gefunden")
+            raise ValueError(f"Label-Spalte '{label_col}' nicht in CSV gefunden. Verfügbare Spalten: {list(df.columns)}")
         
         return df
     
