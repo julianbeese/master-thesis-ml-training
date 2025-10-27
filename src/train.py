@@ -175,19 +175,19 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
 
 
 def main():
-    # Lade Umgebungsvariablen aus config.env
-    env_path = Path(__file__).parent.parent / "config.env"
+    # Lade Umgebungsvariablen aus .env
+    env_path = Path(__file__).parent.parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
-        print("✅ Umgebungsvariablen aus config.env geladen")
+        print("✅ Umgebungsvariablen aus .env geladen")
     else:
-        print("⚠️  config.env nicht gefunden, verwende System-Umgebungsvariablen")
+        print("⚠️  .env nicht gefunden, verwende System-Umgebungsvariablen")
     
     # Hugging Face Token für gated models
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         print("⚠️  HF_TOKEN nicht gefunden!")
-        print("   Erstelle config.env mit HF_TOKEN=dein_token")
+        print("   Erstelle .env mit HF_TOKEN=dein_token")
         print("   oder setze HF_TOKEN='dein_token' als Umgebungsvariable")
         hf_token = None
     else:

@@ -165,13 +165,13 @@ def create_training_arguments(config: Dict, output_dir: Path, use_gpu: bool = Tr
 
 
 def main():
-    # Lade Umgebungsvariablen aus config.env
-    env_path = Path(__file__).parent.parent.parent / "config.env"
+    # Lade Umgebungsvariablen aus .env
+    env_path = Path(__file__).parent.parent.parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
-        print("✅ Umgebungsvariablen aus config.env geladen")
+        print("✅ Umgebungsvariablen aus .env geladen")
     else:
-        print("⚠️  config.env nicht gefunden, verwende System-Umgebungsvariablen")
+        print("⚠️  .env nicht gefunden, verwende System-Umgebungsvariablen")
     
     # RTX 5090 Optimierungen
     if torch.cuda.is_available():
@@ -186,7 +186,7 @@ def main():
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         print("⚠️  HF_TOKEN nicht gefunden!")
-        print("   Erstelle config.env mit HF_TOKEN=dein_token")
+        print("   Erstelle .env mit HF_TOKEN=dein_token")
         print("   oder setze HF_TOKEN='dein_token' als Umgebungsvariable")
         hf_token = None
     else:
