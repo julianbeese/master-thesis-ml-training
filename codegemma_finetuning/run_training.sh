@@ -5,7 +5,7 @@ echo "🚀 Starte CodeGemma Fine-Tuning Pipeline"
 echo "========================================"
 
 # Setze Hugging Face Token (optional)
-export HF_TOKEN="***REMOVED***"
+# export HF_TOKEN="your_token_here"
 
 # Wechsle ins src Verzeichnis
 cd "$(dirname "$0")/src"

@@ -9,6 +9,7 @@ import torch
 from pathlib import Path
 from typing import Dict, Optional
 from huggingface_hub import login
+from dotenv import load_dotenv
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -174,10 +175,24 @@ def setup_training_args(config: Dict, output_dir: Path) -> TrainingArguments:
 
 
 def main():
+    # Lade Umgebungsvariablen aus config.env
+    env_path = Path(__file__).parent.parent / "config.env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print("✅ Umgebungsvariablen aus config.env geladen")
+    else:
+        print("⚠️  config.env nicht gefunden, verwende System-Umgebungsvariablen")
+    
     # Hugging Face Token für gated models
-    hf_token = os.environ.get("HF_TOKEN", "***REMOVED***")
-    login(token=hf_token)
-    print("✅ Hugging Face Token authentifiziert")
+    hf_token = os.environ.get("HF_TOKEN")
+    if not hf_token:
+        print("⚠️  HF_TOKEN nicht gefunden!")
+        print("   Erstelle config.env mit HF_TOKEN=dein_token")
+        print("   oder setze HF_TOKEN='dein_token' als Umgebungsvariable")
+        hf_token = None
+    else:
+        login(token=hf_token)
+        print("✅ Hugging Face Token authentifiziert")
     
     # Config laden
     config_path = Path(__file__).parent.parent / "config" / "training_config.yaml"
